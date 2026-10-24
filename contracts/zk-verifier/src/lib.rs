@@ -29,6 +29,9 @@ pub const NULLIFIER_TTL_THRESHOLD_LEDGERS: u32 = INSTANCE_TTL_THRESHOLD_LEDGERS;
 /// that guards them expire on the same horizon.
 pub const NULLIFIER_TTL_EXTEND_TO_LEDGERS: u32 = INSTANCE_EXTEND_TO_LEDGERS;
 
+/// Maximum number of nullifiers accepted by the batch query in one call.
+pub const MAX_NULLIFIER_BATCH: u32 = 50;
+
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]
@@ -47,6 +50,7 @@ pub enum ZkVerifierError {
     AttestationRevokedOrInvalid = 7,
     InvalidCommitment = 8,
     ProofTooOld = 9,
+    BatchTooLarge = 10,
 }
 
 /// Alias for [`ZkVerifierError`], so the error can be referred to as
@@ -292,30 +296,6 @@ impl ZkVerifier {
         exists
     }
 
-    /// Check a batch of nullifiers at once.
-    ///
-    /// Off-chain clients that hold many nullifiers — a wallet tracking the
-    /// statements it has already presented, an indexer reconciling a batch
-    /// of proofs — need one flag per nullifier, not one contract call per
-    /// nullifier. The flags are returned in the order the nullifiers were
-    /// passed in, and a nullifier that appears twice in the batch yields the
-    /// same flag twice.
-    ///
-    /// This is a read-only query: it never spends a nullifier.
-    pub fn are_nullifiers_used(env: Env, nullifiers: Vec<BytesN<32>>) -> Vec<bool> {
-        extend_instance_ttl(&env);
-        let mut flags = Vec::new(&env);
-        for nullifier in nullifiers.iter() {
-            let key = DataKey::Nullifier(nullifier.clone());
-            let exists = env.storage().persistent().has(&key);
-            if exists {
-                extend_nullifier_ttl(&env, &key);
-            }
-            flags.push_back(exists);
-        }
-        flags
-    }
-
     /// Check if a commitment has been registered/verified
     pub fn is_commitment_verified(env: Env, commitment: BytesN<32>) -> bool {
         extend_instance_ttl(&env);
@@ -329,6 +309,36 @@ impl ZkVerifier {
             );
         }
         exists
+    }
+
+    /// Batch nullifier query for off-chain clients (#547).
+    ///
+    /// Returns one flag per input, in the same order, so a prover or relayer
+    /// can pre-check a whole batch before submitting proofs. Consumed
+    /// nullifiers have their persistent TTL refreshed to match the contract
+    /// instance, exactly like the single-nullifier query.
+    ///
+    /// The batch is bounded by [`MAX_NULLIFIER_BATCH`] so a read-only
+    /// simulation cannot be made arbitrarily expensive.
+    pub fn are_nullifiers_used(
+        env: Env,
+        nullifiers: Vec<BytesN<32>>,
+    ) -> Result<Vec<bool>, ZkVerifierError> {
+        extend_instance_ttl(&env);
+        if nullifiers.len() > MAX_NULLIFIER_BATCH {
+            return Err(ZkVerifierError::BatchTooLarge);
+        }
+
+        let mut used = Vec::new(&env);
+        for nullifier in nullifiers.iter() {
+            let key = DataKey::Nullifier(nullifier);
+            let consumed = env.storage().persistent().has(&key);
+            if consumed {
+                extend_nullifier_ttl(&env, &key);
+            }
+            used.push_back(consumed);
+        }
+        Ok(used)
     }
 }
 

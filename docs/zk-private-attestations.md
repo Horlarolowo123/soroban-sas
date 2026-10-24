@@ -68,8 +68,24 @@ before the instance that guards it.
 | `is_nullifier_used(nullifier)` | Whether a single nullifier was already spent. |
 | `are_nullifiers_used(nullifiers)` | Batch query: one flag per nullifier, in the order the nullifiers were passed in. Lets off-chain clients reconcile a whole batch of nullifiers with a single contract call instead of one call per nullifier. |
 
+### Nullifier Queries
+
+Off-chain provers and relayers can check whether nullifiers were already
+consumed before building a transaction:
+
 ```rust
-// Off-chain client: reconcile a batch of nullifiers in one call.
-let flags = client.are_nullifiers_used(&vec![&env, nullifier_a, nullifier_b]);
-assert_eq!(flags, vec![&env, true, false]);
+/// One flag per input, in the same order.
+pub fn are_nullifiers_used(
+    env: Env,
+    nullifiers: Vec<BytesN<32>>,
+) -> Result<Vec<bool>, ZkVerifierError>
 ```
+
+- The batch is bounded by `MAX_NULLIFIER_BATCH` (50); a larger input is
+  rejected with `ZkVerifierError::BatchTooLarge` so a read-only simulation
+  cannot be made arbitrarily expensive.
+- Consumed nullifiers have their persistent TTL refreshed to match the contract
+  instance, exactly like the single-nullifier `is_nullifier_used` query.
+- A nullifier is scoped to the whole contract, not to a commitment: reusing the
+  same 32-byte nullifier with a fresh commitment or proof is still rejected with
+  `ZkVerifierError::NullifierSpent`.
