@@ -398,7 +398,8 @@ impl TransactionSubmitter {
                 }
                 #[cfg(target_arch = "wasm32")]
                 {
-                    let resource_fee_u32 = u32::try_from(min_resource_fee.max(0)).unwrap_or(u32::MAX);
+                    let resource_fee_u32 =
+                        u32::try_from(min_resource_fee.max(0)).unwrap_or(u32::MAX);
                     v1.tx.fee = base_fee.saturating_add(resource_fee_u32);
                 }
                 v1.tx.ext = TransactionExt::V1(soroban_data.clone());
