@@ -16,18 +16,23 @@ pub mod batch;
 pub mod client;
 pub mod delegation;
 pub mod limits;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod retry;
 pub mod rpc;
 pub mod schema_builder;
 pub mod sequence;
 pub mod signature;
 pub mod simulate;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod stream;
 pub mod strkey;
 pub mod transaction;
 pub mod transaction_signer;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod transaction_submitter;
+#[cfg(not(target_arch = "wasm32"))]
 pub use retry::{ExponentialBackoff, RetryPolicy, RpcErrorKind};
+#[cfg(not(target_arch = "wasm32"))]
 pub use transaction_submitter::{
     FeeBumpSigner, FeeBumpStrategy, FeeBumpTransactionEnvelope, PendingTransaction, SubmitError,
     SubmitResponse, TransactionStatus, TransactionSubmitter,
@@ -58,6 +63,7 @@ pub use simulate::decode_scval;
 pub use simulate::{decode_result, encode_arg};
 
 pub use soroban_sas_schema_macro::derive_schema;
+#[cfg(not(target_arch = "wasm32"))]
 pub use stream::{AttestationEvent, EventFilter, EventStream, EventSubscription, StreamEnvelope};
 #[cfg(not(target_arch = "wasm32"))]
 pub mod mock;

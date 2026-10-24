@@ -309,6 +309,7 @@ dependencies = [
  "elliptic-curve",
  "rfc6979",
  "signature",
+ "spki",
 ]
 
 [[package]]
@@ -354,6 +355,7 @@ dependencies = [
  "ff",
  "generic-array",
  "group",
+ "pkcs8",
  "rand_core",
  "sec1",
  "subtle",
@@ -679,7 +681,9 @@ dependencies = [
  "cfg-if",
  "ecdsa",
  "elliptic-curve",
+ "once_cell",
  "sha2",
+ "signature",
 ]
 
 [[package]]
@@ -1069,6 +1073,7 @@ dependencies = [
  "base16ct",
  "der",
  "generic-array",
+ "pkcs8",
  "subtle",
  "zeroize",
 ]
@@ -1362,6 +1367,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "soroban-sas-schema-macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
+]
+
+[[package]]
 name = "soroban-sas-sdk"
 version = "0.1.0"
 dependencies = [
@@ -1369,13 +1383,16 @@ dependencies = [
  "ed25519-dalek",
  "getrandom",
  "js-sys",
+ "k256",
  "serde",
  "serde_json",
  "sha2",
  "soroban-sas-common",
+ "soroban-sas-schema-macro",
  "soroban-sdk",
  "stellar-strkey",
  "stellar-xdr",
+ "thiserror",
  "tokio",
  "ureq",
  "wasm-bindgen",
